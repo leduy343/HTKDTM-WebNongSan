@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.min.js" ></script>
+
+    <script src="checkout.js" defer ></script>
+    <script src="../script.js" defer></script>
+    <script src="https://kit.fontawesome.com/e24507d923.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css" />
+
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/all.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <title>Green farm | {% block title %} {% endblock %}</title>
+    <style>
+      /* Kiểu chatbox ở góc dưới bên phải */
+      #chatbox-container {
+          position: fixed;
+          bottom: 0px;
+          right: 0px;
+          width: 300px;
+          height: 432px;
+          background-color: #fff;
+          border: 1px solid #ccc;
+          border-radius: 10px 10px 0 0;
+          box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+          opacity: 0.9;  
+          filter: alpha(opacity=30);
+          display: none ;  
+          z-index: 10000;  /* Đảm bảo chatbox nổi trên các phần tử khác */
+      }
+
+      #chatbox-header {
+        background-color: #007bff;
+        color: white;
+        padding: 10px;
+        text-align: center;
+        cursor: pointer;
+        position: relative;
+      }
+
+      #minimize-chatbox {
+          position: absolute;
+          top: 5px;
+          right: 10px;
+          background-color: #007bff;
+          border: 1px solid  #007bff;
+          font-size: 18px;
+          padding: 5px;
+          cursor: pointer;
+      }
+
+      #minimize-icon {
+          font-size: 18px;
+          font-weight: bold;
+          display: inline-block;
+      }
+
+      #minimize-chatbox::before {
+          content: "_";  /* Tạo gạch ngang */
+          font-size: 24px;
+          font-weight: bold;
+          position: absolute;
+          top: 0;
+          right: 0;
+          transform: translateY(-50%);  /* Căn chỉnh gạch ngang với vị trí của nút */
+      }
+
+
+      #chatbox-body {
+          padding: 10px;
+          height: 300px;
+          overflow-y: auto;
+          background-color: #f9f9f9;
+      }
+
+      #chatbox-footer {
+          padding: 10px;
+          border-radius: 5px;
+          border-top: 1px solid #ccc;
+      }
+
+      #user-message {
+          width: 80%;
+          padding: 5px;
+      }
+
+      #send-btn {
+        width: 17%;
+        padding: 5px;
+        cursor: pointer;
+        border: none;
+        background-color: #007bff;
+        color: white;
+        font-size: 16px;
+        border-radius: 5px;
+        transition: background-color 0.3s ease;
+    }
+    
+    #send-btn:hover {
+        background-color: #0056b3;
+    }
+
+      /* Nút mở chatbox */
+      #open-chatbox {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          background-color: #007bff;
+          color: white;
+          border: none;
+          border-radius: 50%;
+          width: 50px;
+          height: 50px;
+          font-size: 24px;
+          cursor: pointer;
+          z-index: 10;  /* Nút mở luôn nổi trên chatbox */
+      }
+      .admin-page{
+          color: rgb(0, 0, 0,0.65);;
+      }
+      .admin-page:hover {
+          color: rgb(228, 150, 7);;
+      }
+</style>
+</head>
+<body style="background-color: rgb(13, 173, 53);">
+
+
+    <!-- navbar section -->
+    <nav class="navbar navbar-expand-lg" style="background-color: white;">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#" style="color: orange; font-size: 30px; margin-right: -2px;">
+          <i class="fa-solid fa-wheat-awn"></i>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <a class="nav-link active" aria-current="page" href="/" style="font-family: cursive; font-size: 19px;">Green farm</a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link text-grey" href="#" style="font-size: 17px;">Thông tin</a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link text-grey" href="#" style="font-size: 17px;">Liên hệ</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-grey" href="/index" style="font-size: 17px;">Thời tiết</a>
+            </li>
+          </ul>
+
+          <form class="d-flex" role="search" action="/search" style="margin-right: 50px;" method="POST">
+            <input class="form-control me-2" name="search" type="search" placeholder="Tìm kiếm" aria-label="Tìm kiếm">
+            <button class="btn" type="submit">Tìm kiếm</button>
+          </form>
+        </div>
+
+            <!-- Hiển thị link Admin Page nếu người dùng là admin -->
+            {% if session.get('is_admin') %}
+            <a class="nav-link text-grey admin-page" href="/admin-page"><span class="badge bg-success"></span> Admin Page</a>
+            {% endif %}
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+
+          <li class="nav-item mx-2" id="items">
+            
+            {% if cart | length < 1 %}
+            <a class="nav-link text-grey" href="/cart"><span class="badge bg-success"></span> Giỏ hàng
+              <i class="fa-solid fa-cart-shopping"></i>
+            </a>
+            {% else %}
+            <a class="nav-link text-grey" href="/cart"><span class="badge bg-success"></span> Giỏ hàng
+              <i class="bi bi-{{ cart | length }}-square-fill"></i>
+            </a>
+            
+            {% endif %}
+            
+            
+          </li>
+
+          <li class="nav-item mx-2" id="items">
+            <a class="nav-link text-grey" href="#"><span class="badge bg-success"></span> Danh sách mong muốn
+              <i class="fa-solid fa-heart"></i>
+            </a>
+          </li>
+
+          
+          <li class="nav-item dropdown mx-2">
+            <a class="nav-link dropdown-toggle text-grey" href="#" role="button", id="profileDropdown" 
+            data-bs-toggle="dropdown" aria-hidden="false">
+              Tài khoản
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+
+            
+              {% if current_user.is_authenticated %}
+              <li><a class="dropdown-item" href="/profile/{{ current_user.id }}">Thông tin cá nhân <i class="fa-solid fa-user"></i></a></li>
+              <li><a class="dropdown-item" href="/orders">Đơn hàng<i class="fa-solid fa-truck-fast"></i></a></li>
+              <li><a class="dropdown-item" href="/logout">Đăng xuất <i class="fa-solid fa-right-from-bracket"></i></a></li>
+
+              {% else %}
+              
+              <li><a class="dropdown-item" href="/login">Đăng nhập <i class="fa-solid fa-right-to-bracket"></i></a></li>
+
+              {% endif %}
+
+            </ul>
+
+          </li>
+
+        </ul>
+
+
+      </div>
+    </nav>
+
+
+    {% for message in get_flashed_messages() %}
+
+    <div class="alert alert-success alert-dismissible fade show" role="alert" style="margin-top: 5px;">
+        <strong>{{ message }}</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    
+    </div>
+    {% endfor %}
+
+    {% block body %}
+
+
+    {% endblock %}
+
+     <!-- Nút mở chatbox -->
+     <button id="open-chatbox">💬</button>
+
+     <!-- Chatbox -->
+     <div id="chatbox-container">
+         <div id="chatbox-header">
+          <span>Chat with Bot</span>
+             <div id="minimize-chatbox">
+              <span id="minimize-icon"></span>  <!-- Gạch ngang -->
+          </div>
+         </div>
+         <div id="chatbox-body">
+             <!-- Các tin nhắn sẽ được hiển thị ở đây -->
+         </div>
+         <div id="chatbox-footer">
+          <input type="text" id="user-message" placeholder="Type a message..." autocomplete="off">
+             <button class="col" id="send-btn">➤</button>
+             <input type="file" id="image-upload" accept="image/*" style="display: none;">
+             <button id="upload-btn">📷 Upload Image</button>
+         </div>
+     </div>
+ 
+     <script>
+        document.getElementById("upload-btn").addEventListener("click", function() {
+          document.getElementById("image-upload").click();
+      });
+
+      // Gửi ảnh lên server khi người dùng chọn file
+      // Bắt sự kiện khi chọn ảnh
+      let selectedFile = null;
+
+      document.getElementById("image-upload").addEventListener("change", function () {
+        selectedFile = this.files[0];
+      });
+      // JavaScript to open/close the chatbox
+      document.getElementById("open-chatbox").addEventListener("click", function() {
+          var chatbox = document.getElementById("chatbox-container");
+          chatbox.style.display = (chatbox.style.display === "none" || chatbox.style.display === "") ? "block" : "none";
+      });
+       // Thu nhỏ hoặc đóng chatbox khi nhấn vào gạch ngang
+       document.getElementById("minimize-chatbox").onclick = function() {
+              var chatbox = document.getElementById("chatbox-container");
+
+              // Ẩn chatbox khi nhấn vào gạch ngang
+              chatbox.style.display = "none";   
+          };
+          document.addEventListener("keydown", function(event) {
+              if (event.key === "Escape") { // Kiểm tra phím Esc
+                  var chatbox = document.getElementById("chatbox-container");
+                  chatbox.style.display = "none"; // Ẩn chatbox khi nhấn Esc
+              }
+          });
+              // Hàm gửi tin nhắn
+              function sendMessage() {
+                var userMessage = document.getElementById("user-message").value;
+                var chatboxBody = document.getElementById("chatbox-body");
+            
+                // Hiển thị tin nhắn của người dùng
+                if (userMessage.trim() !== "" || selectedFile) {
+                    var newMessage = document.createElement("div");
+                    newMessage.classList.add("user-message");
+                    newMessage.textContent = "Bạn: " + userMessage;
+                    chatboxBody.appendChild(newMessage);
+
+                    // Tạo FormData để gửi cả văn bản và file
+                    const formData = new FormData();
+                    if (userMessage.trim() !== "") {
+                        formData.append("user_message", userMessage); // Thêm văn bản
+                    }
+                    if (selectedFile) {
+                        formData.append("image", selectedFile); // Thêm file ảnh
+                        var userImage = document.createElement("img");
+                        userImage.src = URL.createObjectURL(selectedFile); // Tạo URL tạm thời cho ảnh
+                        userImage.style.maxWidth = "100px";
+                        userImage.style.marginTop = "5px";
+                        userImage.style.borderRadius = "8px";
+                        chatboxBody.appendChild(userImage);
+                    }
+            
+                    // Gửi dữ liệu đến server
+                    fetch("/chat", {
+                        method: "POST",
+                        body: formData, // Dùng FormData
+                    })
+                        .then((response) => response.json())
+                        .then((data) => {
+                            // Hiển thị phản hồi của bot
+                            var botMessage = document.createElement("div");
+                            botMessage.classList.add("bot-message");
+                            if (data.image_url) {
+                                botMessage.innerHTML = `
+                                    <p>Bot: ${data.bot_reply}</p>
+                                    <img src="${data.image_url}" alt="Image" style="max-width: 100%; height: auto;">`;
+                            } else {
+                                botMessage.innerHTML = "Bot: " + data.bot_reply;
+                            }
+                            chatboxBody.appendChild(botMessage);
+                            chatboxBody.scrollTop = chatboxBody.scrollHeight; // Cuộn xuống dưới
+                        })
+                        .catch((error) => console.error("Lỗi:", error));
+            
+                    // Xóa nội dung trong ô nhập sau khi gửi và reset file ảnh
+                    document.getElementById("user-message").value = "";
+                    selectedFile = null;
+                    document.getElementById("image-upload").value = ""; // Reset input file
+                }
+            }
+
+          // Gửi tin nhắn khi nhấn nút Send
+          document.getElementById("send-btn").addEventListener("click", sendMessage);
+
+          // Gửi tin nhắn khi nhấn phím Enter
+          document.getElementById("user-message").addEventListener("keydown", function(event) {
+              if (event.key === "Enter") { // Kiểm tra phím Enter
+                  event.preventDefault(); // Ngăn hành vi mặc định (nếu có)
+                  sendMessage(); // Gọi hàm gửi tin nhắn
+              }
+          });
+
+  </script>
+    <footer class="container-fluid  text-center p-2 mt-5" style="background-color: orange; color: white;">
+      <a href="https://github.com/users/xuancu1103/projects/4" style="color: white;">Green farm</a> | <span>
+        <i class="fa-sharp fa-regular fa-copyright"></i></span>
+    </footer>
+
+    <script src="{{ url_for( 'static', filename='js/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for( 'static', filename='js/all.min.js') }}"></script>
+    <script src="{{ url_for( 'static', filename='js/jquery.js') }}"></script>
+
+    <script src="{{ url_for( 'static', filename='js/myScript.js') }}"></script>
+
+       
+
+</body>
+    
+
+
+
+
+
+
+    
+    
+</body>
+</html>
